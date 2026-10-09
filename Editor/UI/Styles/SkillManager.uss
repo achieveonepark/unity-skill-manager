@@ -1,0 +1,41 @@
+.sm-root {
+    flex-grow: 1;
+    background-color: #383838;
+    color: #d2d2d2;
+    --sm-border: #272727;
+    --sm-muted: #a0a0a0;
+    --sm-selected: #3a5f85;
+}
+.sm-root.light-theme {
+    background-color: #c8c8c8;
+    color: #202020;
+    --sm-border: #a0a0a0;
+    --sm-muted: #626262;
+    --sm-selected: #7a9ab8;
+}
+.sm-settings { flex-direction: row; align-items: center; padding: 8px; }
+.sm-settings .unity-toggle { margin-right: 18px; }
+.sm-intro { padding: 0 8px 8px 8px; color: var(--sm-muted); font-size: 11px; }
+.sm-notice { margin: 0 8px 8px 8px; }
+.sm-workspace { flex-grow: 1; border-top-width: 1px; border-top-color: var(--sm-border); }
+.sm-list-panel { min-width: 270px; overflow: hidden; }
+.sm-section { padding: 8px; font-size: 11px; -unity-font-style: bold; }
+.sm-search { width: auto; max-width: 100%; margin: 0 8px 8px 8px; flex-shrink: 1; }
+.sm-list { flex-grow: 1; background-color: transparent; }
+.sm-row { height: 66px; padding: 6px 8px; }
+.sm-row > Label { overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.sm-row #skill-name { font-size: 12px; -unity-font-style: bold; }
+.sm-row #skill-package, .sm-row #skill-state { font-size: 10px; color: var(--sm-muted); }
+.sm-list .unity-collection-view__item--selected { background-color: var(--sm-selected); }
+.sm-details { min-width: 300px; border-left-width: 1px; border-left-color: var(--sm-border); }
+.sm-details .unity-scroll-view__content-container { padding: 12px; }
+.sm-title { font-size: 13px; -unity-font-style: bold; margin-bottom: 8px; }
+.sm-provider { font-size: 11px; color: var(--sm-muted); margin-bottom: 8px; }
+.sm-description { white-space: normal; font-size: 11px; color: var(--sm-muted); margin-bottom: 12px; }
+.sm-states { flex-direction: row; flex-wrap: wrap; margin-bottom: 10px; }
+.sm-states Label { font-size: 11px; margin: 0 18px 4px 0; }
+.sm-actions { flex-direction: row; margin-top: 2px; margin-bottom: 12px; }
+.sm-actions Button { height: 24px; margin: 0 6px 0 0; padding-left: 8px; padding-right: 8px; }
+.sm-preview { flex-direction: column; margin: 0; }
+.sm-preview > .unity-base-field__label { margin-bottom: 6px; font-size: 10px; color: var(--sm-muted); }
+.sm-preview .unity-text-field__input { white-space: normal; font-size: 11px; padding: 6px; }

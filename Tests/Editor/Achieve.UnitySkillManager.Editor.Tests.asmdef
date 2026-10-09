@@ -1,0 +1,6 @@
+{
+  "name": "Achieve.UnitySkillManager.Editor.Tests",
+  "references": ["Achieve.UnitySkillManager.Editor"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

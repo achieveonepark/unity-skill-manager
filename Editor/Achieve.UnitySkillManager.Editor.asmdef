@@ -1,0 +1,5 @@
+{
+  "name": "Achieve.UnitySkillManager.Editor",
+  "rootNamespace": "Achieve.UnitySkillManager.Editor",
+  "includePlatforms": ["Editor"]
+}
