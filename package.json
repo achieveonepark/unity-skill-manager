@@ -1,6 +1,6 @@
 {
   "name": "com.achive.unity-skill-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "Unity Skill Manager",
   "description": "Collect package Skills~ bundles into project-local Codex and Claude Code skill folders.",
   "unity": "2022.3",
