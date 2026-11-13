@@ -153,6 +153,7 @@ namespace Achieve.UnitySkillManager.Editor
 
         private string State(PackageSkill skill, SkillTarget target)
         {
+            if (!skill.Applies(target)) return T("Not provided", "제공 안 함");
             try { return SkillLocalization.State(synchronizer.GetState(skill, target)); }
             catch (IOException) { return T("Path conflict", "경로 충돌"); }
             catch (UnauthorizedAccessException) { return T("Access denied", "접근 불가"); }

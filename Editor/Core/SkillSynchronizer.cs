@@ -66,15 +66,15 @@ namespace Achieve.UnitySkillManager.Editor
         public SkillSyncReport Synchronize(IReadOnlyList<PackageSkill> skills, bool removeStale = true)
         {
             var report = new SkillSyncReport();
-            var duplicateNames = new HashSet<string>(skills.Where(s => s.IsValid).GroupBy(s => s.Name).Where(g => g.Count() > 1).Select(g => g.Key));
+            var colliding = SkillCatalog.Colliding(skills.Where(s => s.IsValid));
             foreach (var skill in skills.Where(IsIncluded))
             {
-                if (!skill.IsValid || duplicateNames.Contains(skill.Name))
+                if (!skill.IsValid || colliding.Contains(skill))
                 {
                     report.Issues.Add(skill.Key + ": " + (skill.Error ?? "Multiple packages provide the same skill name."));
                     continue;
                 }
-                foreach (var target in Targets.Where(Settings.IsEnabled))
+                foreach (var target in Targets.Where(t => Settings.IsEnabled(t) && skill.Applies(t)))
                 {
                     try
                     {
@@ -92,18 +92,44 @@ namespace Achieve.UnitySkillManager.Editor
                     { report.Issues.Add(skill.Name + " (" + target + "): " + ex.Message); }
                 }
             }
-            if (!removeStale) return report;
+            if (!removeStale) { WriteCache(report); return report; }
             // Invalid or colliding providers still count as present, so a scan error cannot delete their previous exports.
-            var present = new HashSet<string>(skills.Where(IsIncluded).Select(s => s.Key));
+            var present = new HashSet<string>(skills.Where(IsIncluded)
+                .SelectMany(s => Targets.Where(s.Applies).Select(t => s.Key + "|" + t)));
             var scanFailed = new HashSet<string>(skills.Where(s => !s.IsValid).Select(s => s.Package.Name));
             foreach (var record in Settings.managed.ToArray())
             {
-                if (Settings.IsEnabled(record.target) && (present.Contains(record.Key) || scanFailed.Contains(record.packageName))) continue;
+                if (Settings.IsEnabled(record.target) && (present.Contains(record.Key + "|" + record.target) || scanFailed.Contains(record.packageName))) continue;
                 try { if (Remove(record, report)) report.Removed++; }
                 catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
                 { report.Issues.Add(record.skillName + " (" + record.target + "): " + ex.Message); }
             }
+            WriteCache(report);
             return report;
+        }
+
+        public string CachePath => SkillFiles.Under(ProjectRoot, "Library/ai_skill_list.json");
+
+        // Library/ai_skill_list.json lists every skill exported so far. It is only a cache: ProjectSettings
+        // stays the source of truth, and a write failure is reported without affecting the exported files.
+        private void WriteCache(SkillSyncReport report)
+        {
+            try
+            {
+                var cache = new SkillCache();
+                foreach (var record in Settings.managed.OrderBy(r => r.skillName, StringComparer.Ordinal).ThenBy(r => r.target))
+                    cache.skills.Add(new SkillCacheEntry
+                    {
+                        packageName = record.packageName, packageVersion = record.packageVersion, skillName = record.skillName,
+                        target = record.target.ToString(), fingerprint = record.fingerprint,
+                        path = (record.target == SkillTarget.Codex ? ".agents/skills/" : ".claude/skills/") + record.skillName
+                    });
+                var text = JsonUtility.ToJson(cache, true) + "\n";
+                var path = CachePath;
+                if (!File.Exists(path) || File.ReadAllText(path) != text) SkillFiles.AtomicWrite(path, text);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            { report.Issues.Add("ai_skill_list.json: " + ex.Message); }
         }
 
         public SkillSyncReport RemoveSkill(PackageSkill skill)
@@ -116,6 +142,7 @@ namespace Achieve.UnitySkillManager.Editor
                 catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
                 { report.Issues.Add(record.skillName + " (" + record.target + "): " + ex.Message); }
             }
+            WriteCache(report);
             return report;
         }
 

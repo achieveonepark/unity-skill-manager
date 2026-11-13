@@ -186,6 +186,54 @@ namespace Achieve.UnitySkillManager.Editor.Tests
             Assert.That(sync.Settings.managed, Has.Count.EqualTo(1));
         }
 
+        private string AddTargetSkill(string packageName, string folder, string skillName = "demo-skill")
+        {
+            var packageRoot = Path.Combine(root, "Packages", packageName);
+            if (!packages.Any(p => p.Name == packageName)) packages.Add(new SkillPackage(packageName, "1.0.0", packageRoot));
+            var directory = Path.Combine(packageRoot, folder.Replace('/', Path.DirectorySeparatorChar), skillName);
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "SKILL.md"), $"---\nname: {skillName}\ndescription: target skill\n---\n", new UTF8Encoding(false));
+            return directory;
+        }
+
+        [Test]
+        public void WritesExportCacheToLibrary()
+        {
+            AddSkill();
+            var sync = new SkillSynchronizer(root);
+            Assert.That(sync.Synchronize(Scan()).Succeeded, Is.True);
+            var path = Path.Combine(root, "Library", "ai_skill_list.json");
+            Assert.That(File.Exists(path), Is.True);
+            var cache = JsonUtility.FromJson<SkillCache>(File.ReadAllText(path));
+            Assert.That(cache.skills.Select(e => e.path), Is.EquivalentTo(new[] { ".agents/skills/demo-skill", ".claude/skills/demo-skill" }));
+            sync.RemoveSkill(Scan()[0]);
+            Assert.That(JsonUtility.FromJson<SkillCache>(File.ReadAllText(path)).skills, Is.Empty);
+        }
+
+        [Test]
+        public void PackageAgentsAndClaudeFoldersExportOnlyToTheirOwnTarget()
+        {
+            AddTargetSkill("com.example.first", ".agents/skills", "codex-only");
+            AddTargetSkill("com.example.first", ".claude/skills", "claude-only");
+            var skills = Scan();
+            Assert.That(skills.Select(s => s.OnlyTarget), Is.EquivalentTo(new SkillTarget?[] { SkillTarget.Codex, SkillTarget.Claude }));
+            Assert.That(new SkillSynchronizer(root).Synchronize(skills).Updated, Is.EqualTo(2));
+            Assert.That(File.Exists(Path.Combine(Export("codex-only", SkillTarget.Codex), "SKILL.md")), Is.True);
+            Assert.That(Directory.Exists(Export("codex-only", SkillTarget.Claude)), Is.False);
+            Assert.That(File.Exists(Path.Combine(Export("claude-only", SkillTarget.Claude), "SKILL.md")), Is.True);
+            Assert.That(Directory.Exists(Export("claude-only", SkillTarget.Codex)), Is.False);
+        }
+
+        [Test]
+        public void SameNameForDifferentTargetsIsNotACollisionButOverlapIs()
+        {
+            AddTargetSkill("com.example.first", ".agents/skills");
+            AddTargetSkill("com.example.second", ".claude/skills");
+            Assert.That(Scan().All(s => s.IsValid), Is.True);
+            AddTargetSkill("com.example.third", ".agents/skills");
+            Assert.That(Scan().Count(s => !s.IsValid), Is.EqualTo(2));
+        }
+
         [Test]
         public void ExplicitRemovalStaysExcludedAcrossSynchronization()
         {

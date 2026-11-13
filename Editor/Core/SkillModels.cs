@@ -26,6 +26,10 @@ namespace Achieve.UnitySkillManager.Editor
         public string SourcePath { get; internal set; }
         public string Error { get; internal set; }
         public string Fingerprint { get; internal set; }
+        // null: provided by Skills~ and exported to every enabled target. Otherwise provided by
+        // <package>/.agents/skills (Codex) or <package>/.claude/skills (Claude) and exported only there.
+        public SkillTarget? OnlyTarget { get; internal set; }
+        public bool Applies(SkillTarget target) => OnlyTarget == null || OnlyTarget == target;
         public string Key => Package.Name + "/" + Name;
         public bool IsValid => string.IsNullOrEmpty(Error);
         internal SortedDictionary<string, byte[]> Files;
@@ -52,6 +56,25 @@ namespace Achieve.UnitySkillManager.Editor
         public List<string> excludedSkills = new List<string>();
         public List<ManagedSkill> managed = new List<ManagedSkill>();
         public bool IsEnabled(SkillTarget target) => target == SkillTarget.Codex ? codex : claude;
+    }
+
+    [Serializable]
+    public sealed class SkillCacheEntry
+    {
+        public string packageName;
+        public string packageVersion;
+        public string skillName;
+        public string target;
+        public string path;
+        public string fingerprint;
+    }
+
+    // Rebuildable record of what was exported, written to Library/ai_skill_list.json.
+    [Serializable]
+    public sealed class SkillCache
+    {
+        public int formatVersion = 1;
+        public List<SkillCacheEntry> skills = new List<SkillCacheEntry>();
     }
 
     public sealed class SkillSyncReport
